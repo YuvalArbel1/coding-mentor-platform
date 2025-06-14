@@ -9,10 +9,15 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Import our modules
-import pool from './config/database.js';
+// Import configurations
+import './config/database.js'; // Initialize database connection
 import Logger from './utils/logger.js';
-import { SOCKET_EVENTS } from './utils/constants.js';
+
+// Import routes
+import codeBlockRoutes from './routes/codeBlockRoutes.js';
+
+// Import Socket controller
+import setupSocketHandlers from './controllers/socketController.js';
 
 dotenv.config();
 
@@ -28,27 +33,46 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Test route
+// Health check route
 app.get('/', (req, res) => {
-    res.json({ message: 'Server is running!', timestamp: new Date() });
+    res.json({
+        message: 'Coding Mentor Platform API',
+        version: '1.0.0',
+        timestamp: new Date()
+    });
 });
 
-// Test database connection
-app.get('/api/test-db', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT NOW()');
-        res.json({
-            message: 'Database connected!',
-            time: result.rows[0].now
-        });
-    } catch (error) {
-        Logger.error('Database test failed', error);
-        res.status(500).json({ error: 'Database connection failed' });
-    }
+// API Routes
+app.use('/api/blocks', codeBlockRoutes);
+
+// Socket.io setup
+setupSocketHandlers(io);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    Logger.error('Unhandled error', err);
+    res.status(500).json({
+        success: false,
+        error: process.env.NODE_ENV === 'production'
+            ? 'Internal server error'
+            : err.message
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Route not found'
+    });
 });
 
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
     Logger.info(`Server running on port ${PORT}`);
+    Logger.info(`Environment: ${process.env.NODE_ENV}`);
 });
+
+export { io };
