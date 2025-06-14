@@ -3,7 +3,7 @@
  * @module controllers/socketController
  */
 
-import { SOCKET_EVENTS, USER_ROLES } from '../utils/constants.js';
+import {SOCKET_EVENTS, USER_ROLES} from '../utils/constants.js';
 import roomService from '../services/roomService.js';
 import CodeBlockService from '../services/codeBlockService.js';
 import Logger from '../utils/logger.js';
@@ -19,7 +19,7 @@ function setupSocketHandlers(io) {
         /**
          * Handle joining a code block room
          */
-        socket.on(SOCKET_EVENTS.JOIN_ROOM, async ({ blockId }) => {
+        socket.on(SOCKET_EVENTS.JOIN_ROOM, async ({blockId}) => {
             try {
                 // Leave any previous rooms
                 const rooms = Array.from(socket.rooms);
@@ -34,15 +34,25 @@ function setupSocketHandlers(io) {
                 socket.join(roomName);
 
                 // Assign role and get room info
-                const { role, room } = roomService.joinRoom(blockId, socket.id);
+                const {role, room} = roomService.joinRoom(blockId, socket.id);
 
                 // Get the code block data
                 const codeBlock = await CodeBlockService.getCodeBlockById(blockId);
 
-                // Send role and initial code to the user
+                // Determine which code to send
+                let codeToSend = room.code;
+
+                // If room has no code yet (first user/mentor), use initial code
+                if (!codeToSend || codeToSend === '') {
+                    codeToSend = codeBlock.initial_code;
+                    // Save the initial code to the room
+                    roomService.updateRoomCode(blockId, codeToSend);
+                }
+
+                // Send role and code to the user
                 socket.emit(SOCKET_EVENTS.JOIN_ROOM, {
                     role,
-                    code: room.code || codeBlock.initial_code,
+                    code: codeToSend,
                     title: codeBlock.title,
                     description: codeBlock.description
                 });
@@ -53,14 +63,14 @@ function setupSocketHandlers(io) {
                 Logger.info(`User ${socket.id} joined room ${roomName} as ${role}`);
             } catch (error) {
                 Logger.error('Error joining room', error);
-                socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to join room' });
+                socket.emit(SOCKET_EVENTS.ERROR, {message: 'Failed to join room'});
             }
         });
 
         /**
          * Handle code changes from students
          */
-        socket.on(SOCKET_EVENTS.CODE_CHANGE, async ({ blockId, code }) => {
+        socket.on(SOCKET_EVENTS.CODE_CHANGE, async ({blockId, code}) => {
             try {
                 const room = roomService.getOrCreateRoom(blockId);
 
@@ -69,7 +79,7 @@ function setupSocketHandlers(io) {
                     roomService.updateRoomCode(blockId, code);
 
                     // Broadcast to all users in the room
-                    socket.to(`block-${blockId}`).emit(SOCKET_EVENTS.CODE_CHANGE, { code });
+                    socket.to(`block-${blockId}`).emit(SOCKET_EVENTS.CODE_CHANGE, {code});
 
                     // Check if solution matches
                     const isCorrect = await CodeBlockService.checkSolution(blockId, code);
@@ -86,12 +96,12 @@ function setupSocketHandlers(io) {
         /**
          * Handle cursor position updates
          */
-        socket.on(SOCKET_EVENTS.CURSOR_MOVE, ({ blockId, position, selection }) => {
+        socket.on(SOCKET_EVENTS.CURSOR_MOVE, ({blockId, position, selection}) => {
             const room = roomService.getOrCreateRoom(blockId);
 
             // Get user info
             let userName = 'Anonymous';
-            let userColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            let userColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
 
             if (room.mentor === socket.id) {
                 userName = 'Mentor';
@@ -121,7 +131,7 @@ function setupSocketHandlers(io) {
             const blockId = roomService.findRoomBySocketId(socket.id);
 
             if (blockId) {
-                const { wasMentor, room } = roomService.leaveRoom(blockId, socket.id);
+                const {wasMentor, room} = roomService.leaveRoom(blockId, socket.id);
 
                 if (wasMentor && room && room.students.size > 0) {
                     // Mentor left, notify students

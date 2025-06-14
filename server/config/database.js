@@ -19,10 +19,23 @@ const pool = new Pool({
     ssl: {
         rejectUnauthorized: false
     },
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000, // 10 seconds
+    query_timeout: 10000,
+    statement_timeout: 10000,
 });
+
+/**
+ * Keep-alive query to prevent connection timeout
+ */
+setInterval(async () => {
+    try {
+        await pool.query('SELECT 1');
+    } catch (err) {
+        console.log('Keep-alive query failed:', err.message);
+    }
+}, 30000); // Every 30 seconds
 
 /**
  * Test database connection
@@ -33,7 +46,17 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
     console.error('❌ Unexpected error on idle client', err);
-    process.exit(-1);
 });
+
+// Test connection on startup
+(async () => {
+    try {
+        const client = await pool.connect();
+        console.log('✅ Initial database connection successful');
+        client.release();
+    } catch (err) {
+        console.error('❌ Initial database connection failed:', err.message);
+    }
+})();
 
 export default pool;

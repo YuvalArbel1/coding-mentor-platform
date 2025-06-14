@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for code editor */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Monaco Editor custom styles */
+.monaco-editor {
+    padding-top: 10px;
+}
+
+/* Animation for solution celebration */
+@keyframes celebration {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        transform: scale(1.1) rotate(5deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(-5deg);
+    }
+    75% {
+        transform: scale(1.1) rotate(5deg);
+    }
+}
+
+.celebrate {
+    animation: celebration 0.5s ease-in-out;
+}
