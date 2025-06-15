@@ -1,17 +1,64 @@
+/**
+ * Lobby Page Component
+ *
+ * The main landing page of the Coding Mentor Platform where users can:
+ * - View all available code blocks
+ * - Select a code block to start a coding session
+ * - See loading and error states
+ *
+ * @component
+ * @module pages/Lobby
+ */
+
 import React, {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {codeBlockAPI} from '../services/api';
 
+/**
+ * Lobby Component - Displays available code blocks
+ *
+ * @component
+ * @returns {JSX.Element} The lobby page with code block cards
+ */
 const Lobby = () => {
+    /**
+     * State for storing code blocks fetched from API
+     * @type {[Array, Function]}
+     */
     const [codeBlocks, setCodeBlocks] = useState([]);
+
+    /**
+     * Loading state for API calls
+     * @type {[boolean, Function]}
+     */
     const [loading, setLoading] = useState(true);
+
+    /**
+     * Error state for failed API calls
+     * @type {[string|null, Function]}
+     */
     const [error, setError] = useState(null);
+
+    /**
+     * React Router navigation hook
+     */
     const navigate = useNavigate();
 
+    /**
+     * Fetch code blocks on component mount
+     */
     useEffect(() => {
         fetchCodeBlocks();
     }, []);
 
+    /**
+     * Fetches all available code blocks from the API
+     * Handles loading and error states
+     *
+     * @async
+     * @function fetchCodeBlocks
+     * @returns {Promise<void>}
+     */
     const fetchCodeBlocks = async () => {
         try {
             setLoading(true);
@@ -26,11 +73,23 @@ const Lobby = () => {
         }
     };
 
+    /**
+     * Handles navigation to selected code block
+     *
+     * @function handleBlockClick
+     * @param {number} blockId - ID of the selected code block
+     */
     const handleBlockClick = (blockId) => {
         navigate(`/block/${blockId}`);
     };
 
-    // Block icons based on title
+    /**
+     * Returns an emoji icon based on the code block title
+     *
+     * @function getIcon
+     * @param {string} title - Code block title
+     * @returns {string} Emoji icon
+     */
     const getIcon = (title) => {
         if (title.includes('Async')) return '⚡';
         if (title.includes('Array')) return '📊';
@@ -39,6 +98,7 @@ const Lobby = () => {
         return '💻';
     };
 
+    // Loading state UI
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -51,6 +111,7 @@ const Lobby = () => {
         );
     }
 
+    // Error state UI
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -67,6 +128,7 @@ const Lobby = () => {
         );
     }
 
+    // Main lobby UI
     return (
         <div className="container mx-auto px-4 py-12 max-w-6xl">
             {/* Header */}
@@ -74,26 +136,23 @@ const Lobby = () => {
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent mb-4">
                     Choose Code Block
                 </h1>
-                <p className="text-gray-400 text-lg">
-                    Select a JavaScript challenge to practice with real-time collaboration
+                <p className="text-xl text-gray-400">
+                    Select a JavaScript challenge to practice with real-time mentoring
                 </p>
             </div>
 
-            {/* Code Blocks Grid */}
+            {/* Code blocks grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {codeBlocks.map((block) => (
                     <div
                         key={block.id}
                         onClick={() => handleBlockClick(block.id)}
-                        className="group relative bg-gray-800 rounded-xl p-6 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 border border-gray-700 hover:border-blue-500"
+                        className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
                     >
-                        {/* Decorative gradient */}
+                        {/* Card content */}
                         <div
-                            className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                        {/* Content */}
-                        <div className="relative z-10">
-                            <div className="flex items-center mb-3">
+                            className="bg-gray-800 rounded-xl p-6 border border-gray-700 group-hover:border-blue-500 transition-all duration-300 shadow-lg group-hover:shadow-2xl">
+                            <div className="flex items-center mb-4">
                                 <span className="text-4xl mr-3">{getIcon(block.title)}</span>
                                 <h2 className="text-2xl font-semibold text-white group-hover:text-blue-400 transition-colors">
                                     {block.title}
