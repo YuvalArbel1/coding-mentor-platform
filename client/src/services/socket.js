@@ -88,6 +88,25 @@ class SocketService {
         }
     }
 
+    // New events for individual workspaces
+    onStudentCodeUpdate(callback) {
+        if (this.socket) {
+            this.socket.on('student-code-update', callback);
+        }
+    }
+
+    onStudentSolved(callback) {
+        if (this.socket) {
+            this.socket.on('student-solved', callback);
+        }
+    }
+
+    onStudentLeft(callback) {
+        if (this.socket) {
+            this.socket.on('student-left', callback);
+        }
+    }
+
     removeAllListeners() {
         if (this.socket) {
             this.socket.removeAllListeners();

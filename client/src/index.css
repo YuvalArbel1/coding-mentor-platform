@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure full height for React root */
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
 /* Custom scrollbar for code editor */
 ::-webkit-scrollbar {
     width: 8px;
@@ -24,6 +32,11 @@
 /* Monaco Editor custom styles */
 .monaco-editor {
     padding-top: 10px;
+}
+
+/* Prevent Monaco resize observer errors */
+.monaco-editor .overflow-guard {
+    border-radius: 0 !important;
 }
 
 /* Animation for solution celebration */

@@ -33,32 +33,42 @@ function setupSocketHandlers(io) {
                 const roomName = `block-${blockId}`;
                 socket.join(roomName);
 
-                // Assign role and get room info
-                const {role, room} = roomService.joinRoom(blockId, socket.id);
-
                 // Get the code block data
                 const codeBlock = await CodeBlockService.getCodeBlockById(blockId);
 
-                // Determine which code to send
-                let codeToSend = room.code;
+                // Assign role and get room info
+                const {role, room} = roomService.joinRoom(blockId, socket.id, codeBlock.initial_code);
 
-                // If room has no code yet (first user/mentor), use initial code
-                if (!codeToSend || codeToSend === '') {
-                    codeToSend = codeBlock.initial_code;
-                    // Save the initial code to the room
-                    roomService.updateRoomCode(blockId, codeToSend);
-                }
-
-                // Send role and code to the user
-                socket.emit(SOCKET_EVENTS.JOIN_ROOM, {
+                // Prepare response based on role
+                let responseData = {
                     role,
-                    code: codeToSend,
                     title: codeBlock.title,
                     description: codeBlock.description
-                });
+                };
+
+                if (role === USER_ROLES.MENTOR) {
+                    // Mentor gets all students' code (empty array if no students yet)
+                    responseData.students = roomService.getAllStudentsCode(blockId);
+                } else {
+                    // Student gets their own code
+                    responseData.code = codeBlock.initial_code;
+                }
+
+                // Send role and appropriate data to the user
+                socket.emit(SOCKET_EVENTS.JOIN_ROOM, responseData);
 
                 // Update room info for all users
                 io.to(roomName).emit(SOCKET_EVENTS.ROOM_INFO, roomService.getRoomInfo(blockId));
+
+                // If a student joined, notify the mentor immediately
+                if (role === USER_ROLES.STUDENT && room.mentor) {
+                    const student = room.students.get(socket.id);
+                    io.to(room.mentor).emit(SOCKET_EVENTS.STUDENT_CODE_UPDATE, {
+                        socketId: socket.id,
+                        name: student.name,
+                        code: student.code
+                    });
+                }
 
                 Logger.info(`User ${socket.id} joined room ${roomName} as ${role}`);
             } catch (error) {
@@ -76,49 +86,41 @@ function setupSocketHandlers(io) {
 
                 // Only students can change code
                 if (room.students.has(socket.id)) {
-                    roomService.updateRoomCode(blockId, code);
+                    // Update this student's code
+                    roomService.updateStudentCode(blockId, socket.id, code);
 
-                    // Broadcast to all users in the room
-                    socket.to(`block-${blockId}`).emit(SOCKET_EVENTS.CODE_CHANGE, {code});
+                    // Get student info
+                    const student = room.students.get(socket.id);
+
+                    // Send update to mentor only
+                    if (room.mentor) {
+                        io.to(room.mentor).emit(SOCKET_EVENTS.STUDENT_CODE_UPDATE, {
+                            socketId: socket.id,
+                            name: student.name,
+                            code: code
+                        });
+                    }
 
                     // Check if solution matches
                     const isCorrect = await CodeBlockService.checkSolution(blockId, code);
                     if (isCorrect) {
-                        io.to(`block-${blockId}`).emit(SOCKET_EVENTS.SOLUTION_MATCHED);
-                        Logger.info(`Solution matched for block ${blockId}`);
+                        // Notify the student
+                        socket.emit(SOCKET_EVENTS.SOLUTION_MATCHED);
+
+                        // Notify the mentor
+                        if (room.mentor) {
+                            io.to(room.mentor).emit(SOCKET_EVENTS.STUDENT_SOLVED, {
+                                socketId: socket.id,
+                                name: student.name
+                            });
+                        }
+
+                        Logger.info(`Solution matched for student ${socket.id} in block ${blockId}`);
                     }
                 }
             } catch (error) {
                 Logger.error('Error handling code change', error);
             }
-        });
-
-        /**
-         * Handle cursor position updates
-         */
-        socket.on(SOCKET_EVENTS.CURSOR_MOVE, ({blockId, position, selection}) => {
-            const room = roomService.getOrCreateRoom(blockId);
-
-            // Get user info
-            let userName = 'Anonymous';
-            let userColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
-
-            if (room.mentor === socket.id) {
-                userName = 'Mentor';
-                userColor = '#FF6B6B';
-            } else if (room.students.has(socket.id)) {
-                const studentIndex = Array.from(room.students).indexOf(socket.id);
-                userName = `Student ${studentIndex + 1}`;
-            }
-
-            // Broadcast cursor position to others
-            socket.to(`block-${blockId}`).emit(SOCKET_EVENTS.CURSOR_MOVE, {
-                userId: socket.id,
-                userName,
-                userColor,
-                position,
-                selection
-            });
         });
 
         /**
@@ -131,12 +133,25 @@ function setupSocketHandlers(io) {
             const blockId = roomService.findRoomBySocketId(socket.id);
 
             if (blockId) {
+                // Get room info BEFORE leaving
+                const roomBeforeLeave = roomService.getOrCreateRoom(blockId);
+                const mentorId = roomBeforeLeave.mentor;
+
                 const {wasMentor, room} = roomService.leaveRoom(blockId, socket.id);
 
                 if (wasMentor && room && room.students.size > 0) {
                     // Mentor left, notify students
                     io.to(`block-${blockId}`).emit(SOCKET_EVENTS.MENTOR_LEFT);
                     Logger.info(`Mentor left room block-${blockId}, students will be redirected`);
+
+                    // Clear the room completely when mentor leaves
+                    roomService.clearRoom(blockId);
+                } else if (!wasMentor && mentorId) {
+                    // Student left and there's a mentor - notify them
+                    Logger.info(`Notifying mentor ${mentorId} that student ${socket.id} left`);
+                    io.to(mentorId).emit(SOCKET_EVENTS.STUDENT_LEFT, {
+                        socketId: socket.id
+                    });
                 }
 
                 // Update room info

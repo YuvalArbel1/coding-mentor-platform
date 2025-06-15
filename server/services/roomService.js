@@ -4,13 +4,13 @@
  */
 
 import Logger from '../utils/logger.js';
-import { USER_ROLES } from '../utils/constants.js';
+import {USER_ROLES} from '../utils/constants.js';
 
 class RoomService {
     constructor() {
         /**
-         * Room data structure
-         * @type {Map<string, {mentor: string|null, students: Set<string>, code: string}>}
+         * Room data structure with individual student code
+         * @type {Map<string, {mentor: string|null, students: Map<string, {code: string, name: string}>, blockId: string}>}
          */
         this.rooms = new Map();
     }
@@ -26,8 +26,7 @@ class RoomService {
         if (!this.rooms.has(roomId)) {
             this.rooms.set(roomId, {
                 mentor: null,
-                students: new Set(),
-                code: '',
+                students: new Map(), // Map of socketId -> {code, name}
                 blockId: blockId
             });
             Logger.info(`Created new room: ${roomId}`);
@@ -40,9 +39,10 @@ class RoomService {
      * Join a room and assign role
      * @param {string} blockId - Code block ID
      * @param {string} socketId - Socket ID
+     * @param {string} initialCode - Initial code template
      * @returns {{role: string, room: Object}} Role and room info
      */
-    joinRoom(blockId, socketId) {
+    joinRoom(blockId, socketId, initialCode = '') {
         const room = this.getOrCreateRoom(blockId);
         let role;
 
@@ -51,12 +51,18 @@ class RoomService {
             role = USER_ROLES.MENTOR;
             Logger.info(`Mentor ${socketId} joined room block-${blockId}`);
         } else {
-            room.students.add(socketId);
+            // Add student with their own code copy
+            const studentNumber = room.students.size + 1;
+            room.students.set(socketId, {
+                code: initialCode,
+                name: `Student ${studentNumber}`,
+                socketId: socketId
+            });
             role = USER_ROLES.STUDENT;
             Logger.info(`Student ${socketId} joined room block-${blockId}`);
         }
 
-        return { role, room };
+        return {role, room};
     }
 
     /**
@@ -72,7 +78,6 @@ class RoomService {
         if (room.mentor === socketId) {
             wasMentor = true;
             room.mentor = null;
-            room.code = ''; // Clear code when mentor leaves
             Logger.info(`Mentor ${socketId} left room block-${blockId}`);
         } else {
             room.students.delete(socketId);
@@ -83,10 +88,68 @@ class RoomService {
         if (!room.mentor && room.students.size === 0) {
             this.rooms.delete(`block-${blockId}`);
             Logger.info(`Deleted empty room block-${blockId}`);
-            return { wasMentor, room: null };
+            return {wasMentor, room: null};
         }
 
-        return { wasMentor, room };
+        return {wasMentor, room};
+    }
+
+    /**
+     * Update student's code
+     * @param {string} blockId - Code block ID
+     * @param {string} socketId - Socket ID
+     * @param {string} code - Updated code
+     */
+    updateStudentCode(blockId, socketId, code) {
+        const room = this.getOrCreateRoom(blockId);
+        const student = room.students.get(socketId);
+        if (student) {
+            student.code = code;
+        }
+    }
+
+    /**
+     * Get all students' code for mentor view
+     * @param {string} blockId - Code block ID
+     * @returns {Array} Array of student data
+     */
+    getAllStudentsCode(blockId) {
+        const room = this.getOrCreateRoom(blockId);
+        const studentsArray = [];
+
+        room.students.forEach((student, socketId) => {
+            studentsArray.push({
+                socketId,
+                name: student.name,
+                code: student.code
+            });
+        });
+
+        return studentsArray;
+    }
+
+    /**
+     * Get specific student's code
+     * @param {string} blockId - Code block ID
+     * @param {string} socketId - Socket ID
+     * @returns {string|null} Student's code or null
+     */
+    getStudentCode(blockId, socketId) {
+        const room = this.getOrCreateRoom(blockId);
+        const student = room.students.get(socketId);
+        return student ? student.code : null;
+    }
+
+    /**
+     * Clear/delete a room completely
+     * @param {string} blockId - Code block ID
+     */
+    clearRoom(blockId) {
+        const roomId = `block-${blockId}`;
+        if (this.rooms.has(roomId)) {
+            this.rooms.delete(roomId);
+            Logger.info(`Room ${roomId} cleared completely`);
+        }
     }
 
     /**
@@ -99,18 +162,12 @@ class RoomService {
         return {
             hasMentor: !!room.mentor,
             studentCount: room.students.size,
-            totalUsers: (room.mentor ? 1 : 0) + room.students.size
+            totalUsers: (room.mentor ? 1 : 0) + room.students.size,
+            students: Array.from(room.students.entries()).map(([socketId, student]) => ({
+                socketId,
+                name: student.name
+            }))
         };
-    }
-
-    /**
-     * Update room code
-     * @param {string} blockId - Code block ID
-     * @param {string} code - Updated code
-     */
-    updateRoomCode(blockId, code) {
-        const room = this.getOrCreateRoom(blockId);
-        room.code = code;
     }
 
     /**

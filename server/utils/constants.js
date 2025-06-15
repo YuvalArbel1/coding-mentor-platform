@@ -18,7 +18,10 @@ export const SOCKET_EVENTS = {
     REQUEST_HINT: 'request-hint',
     HINT_RESPONSE: 'hint-response',
     CURSOR_MOVE: 'cursor-move',
-    ERROR: 'error'
+    ERROR: 'error',
+    STUDENT_CODE_UPDATE: 'student-code-update',
+    STUDENT_SOLVED: 'student-solved',
+    STUDENT_LEFT: 'student-left'
 };
 
 /**
