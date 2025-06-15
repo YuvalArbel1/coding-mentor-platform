@@ -4,12 +4,12 @@
  */
 
 import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
+import {createServer} from 'http';
+import {Server} from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 
 // Import configurations
 import './config/database.js'; // Initialize database connection
@@ -39,19 +39,19 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended: true}));
 
-// Health check route
-app.get('/', (req, res) => {
+// API Routes
+app.use('/api/blocks', codeBlockRoutes);
+
+// Health check route - moved to /api/health
+app.get('/api/health', (req, res) => {
     res.json({
         message: 'Coding Mentor Platform API',
         version: '1.0.0',
         timestamp: new Date()
     });
 });
-
-// API Routes
-app.use('/api/blocks', codeBlockRoutes);
 
 // Socket.io setup
 setupSocketHandlers(io);
@@ -92,4 +92,4 @@ httpServer.listen(PORT, () => {
     Logger.info(`Environment: ${process.env.NODE_ENV}`);
 });
 
-export { io };
+export {io};
