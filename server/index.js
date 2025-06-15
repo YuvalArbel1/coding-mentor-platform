@@ -8,6 +8,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import configurations
 import './config/database.js'; // Initialize database connection
@@ -20,6 +22,10 @@ import codeBlockRoutes from './routes/codeBlockRoutes.js';
 import setupSocketHandlers from './controllers/socketController.js';
 
 dotenv.config();
+
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -50,6 +56,17 @@ app.use('/api/blocks', codeBlockRoutes);
 // Socket.io setup
 setupSocketHandlers(io);
 
+// Serve static files from React app in production
+if (process.env.NODE_ENV === 'production') {
+    // Serve static files from the React app
+    app.use(express.static(path.join(__dirname, '../client/build')));
+
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+    });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     Logger.error('Unhandled error', err);
@@ -61,7 +78,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 404 handler
+// 404 handler - Only for API routes
 app.use((req, res) => {
     res.status(404).json({
         success: false,
