@@ -77,8 +77,15 @@ const CodeBlock = () => {
         try {
             setLoading(true);
             const response = await codeBlockAPI.getBlockById(id);
+
+            // ADD THIS VALIDATION
+            if (!response.data || parseInt(id) > 4 || parseInt(id) < 1) {
+                setError('Invalid code block');
+                setLoading(false);
+                return;
+            }
+
             setCodeBlock(response.data);
-            // Set initial code as fallback if socket doesn't provide it
             if (!code && response.data.initial_code) {
                 setCode(response.data.initial_code);
             }
@@ -90,7 +97,6 @@ const CodeBlock = () => {
             setLoading(false);
         }
     };
-
     const setupSocketListeners = () => {
         // When joined room
         socketService.onJoinRoom((data) => {

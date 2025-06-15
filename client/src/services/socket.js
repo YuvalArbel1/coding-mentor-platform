@@ -24,6 +24,11 @@ class SocketService {
             console.error('Socket error:', error);
         });
 
+        this.socket.on('connect_error', (error) => {
+            console.error('Connection failed:', error);
+            alert('Failed to connect to server. Please refresh the page.');
+        });
+
         return this.socket;
     }
 
@@ -46,21 +51,10 @@ class SocketService {
         }
     }
 
-    sendCursorPosition(blockId, position, selection) {
-        if (this.socket) {
-            this.socket.emit('cursor-move', {blockId, position, selection});
-        }
-    }
 
     onJoinRoom(callback) {
         if (this.socket) {
             this.socket.on('join-room', callback);
-        }
-    }
-
-    onCodeChange(callback) {
-        if (this.socket) {
-            this.socket.on('code-change', callback);
         }
     }
 
@@ -82,13 +76,6 @@ class SocketService {
         }
     }
 
-    onCursorMove(callback) {
-        if (this.socket) {
-            this.socket.on('cursor-move', callback);
-        }
-    }
-
-    // New events for individual workspaces
     onStudentCodeUpdate(callback) {
         if (this.socket) {
             this.socket.on('student-code-update', callback);

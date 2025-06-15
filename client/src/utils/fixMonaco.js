@@ -22,7 +22,6 @@ const fixMonacoResize = () => {
         originalConsoleError.apply(console, args);
     };
 
-    // Simple fix: catch and ignore ResizeObserver errors globally
     const ro = window.ResizeObserver;
     window.ResizeObserver = function (callback) {
         return new ro(function (entries, observer) {
