@@ -65,7 +65,11 @@ class SocketService {
 
     sendHint(studentId, hintId, blockId) {
         if (this.socket) {
-            this.socket.emit('send-hint', {studentId, hintId, blockId});
+            this.socket.emit('send-hint', {
+                studentId,
+                hintId: Number(hintId),
+                blockId
+            });
         }
     }
 

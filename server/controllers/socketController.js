@@ -154,19 +154,19 @@ function setupSocketHandlers(io) {
         /**
          * Handle hint request from student
          */
-        socket.on(SOCKET_EVENTS.REQUEST_HINT, async ({ blockId, studentName }) => {
+        socket.on(SOCKET_EVENTS.REQUEST_HINT, async ({blockId, studentName}) => {
             try {
                 const room = roomService.getOrCreateRoom(blockId);
 
                 // Check if student is in the room
                 if (!room.students.has(socket.id)) {
-                    socket.emit(SOCKET_EVENTS.ERROR, { message: 'You must be a student to request hints' });
+                    socket.emit(SOCKET_EVENTS.ERROR, {message: 'You must be a student to request hints'});
                     return;
                 }
 
                 // Check if student can request more hints
                 if (!HintService.canRequestMoreHints(blockId, socket.id)) {
-                    socket.emit(SOCKET_EVENTS.ERROR, { message: 'You have already received the maximum number of hints (3)' });
+                    socket.emit(SOCKET_EVENTS.ERROR, {message: 'You have already received the maximum number of hints (3)'});
                     return;
                 }
 
@@ -190,7 +190,7 @@ function setupSocketHandlers(io) {
                         availableHints: hints.map(h => ({
                             id: h.id,
                             level: h.level,
-                            alreadySent: sentHints.has(h.id)
+                            alreadySent: sentHints.has(Number(h.id))
                         })),
                         totalSentHints: sentHints.size
                     });
@@ -210,20 +210,20 @@ function setupSocketHandlers(io) {
                 Logger.info(`Student ${socket.id} requested hint #${requestCount} for block ${blockId}`);
             } catch (error) {
                 Logger.error('Error handling hint request', error);
-                socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to request hint' });
+                socket.emit(SOCKET_EVENTS.ERROR, {message: 'Failed to request hint'});
             }
         });
 
         /**
          * Handle mentor sending hint to student
          */
-        socket.on(SOCKET_EVENTS.SEND_HINT, async ({ studentId, hintId, blockId }) => {
+        socket.on(SOCKET_EVENTS.SEND_HINT, async ({studentId, hintId, blockId}) => {
             try {
                 const room = roomService.getOrCreateRoom(blockId);
 
                 // Verify sender is the mentor
                 if (room.mentor !== socket.id) {
-                    socket.emit(SOCKET_EVENTS.ERROR, { message: 'Only mentors can send hints' });
+                    socket.emit(SOCKET_EVENTS.ERROR, {message: 'Only mentors can send hints'});
                     return;
                 }
 
@@ -255,20 +255,20 @@ function setupSocketHandlers(io) {
                 Logger.info(`Mentor sent ${hint.level} hint to student ${studentId}`);
             } catch (error) {
                 Logger.error('Error sending hint', error);
-                socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to send hint' });
+                socket.emit(SOCKET_EVENTS.ERROR, {message: 'Failed to send hint'});
             }
         });
 
         /**
          * Handle mentor declining hint request
          */
-        socket.on(SOCKET_EVENTS.DECLINE_HINT, ({ studentId, blockId }) => {
+        socket.on(SOCKET_EVENTS.DECLINE_HINT, ({studentId, blockId}) => {
             try {
                 const room = roomService.getOrCreateRoom(blockId);
 
                 // Verify sender is the mentor
                 if (room.mentor !== socket.id) {
-                    socket.emit(SOCKET_EVENTS.ERROR, { message: 'Only mentors can decline hints' });
+                    socket.emit(SOCKET_EVENTS.ERROR, {message: 'Only mentors can decline hints'});
                     return;
                 }
 
@@ -280,7 +280,7 @@ function setupSocketHandlers(io) {
                 Logger.info(`Mentor declined hint request from student ${studentId}`);
             } catch (error) {
                 Logger.error('Error declining hint', error);
-                socket.emit(SOCKET_EVENTS.ERROR, { message: 'Failed to decline hint' });
+                socket.emit(SOCKET_EVENTS.ERROR, {message: 'Failed to decline hint'});
             }
         });
 

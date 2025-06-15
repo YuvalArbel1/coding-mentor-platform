@@ -14,6 +14,12 @@ class HintService {
     static hintRequests = new Map();
 
     /**
+     * Track sent hints per student per code block
+     * Structure: { 'blockId-studentId': Set<hintId> }
+     */
+    static sentHints = new Map();
+
+    /**
      * Get hints for a specific code block
      * @param {number} codeBlockId - Code block ID
      * @returns {Promise<Array>} Array of hints
@@ -61,12 +67,6 @@ class HintService {
     }
 
     /**
-     * Track sent hints per student per code block
-     * Structure: { 'blockId-studentId': Set<hintId> }
-     */
-    static sentHints = new Map();
-
-    /**
      * Track hint request from student
      * @param {string} blockId - Code block ID
      * @param {string} studentId - Student socket ID
@@ -89,15 +89,18 @@ class HintService {
      * Record that a hint was sent
      * @param {string} blockId - Code block ID
      * @param {string} studentId - Student socket ID
-     * @param {number} hintId - Hint ID
+     * @param {number|string} hintId - Hint ID
      */
     static recordSentHint(blockId, studentId, hintId) {
         const key = `${blockId}-${studentId}`;
         if (!this.sentHints.has(key)) {
             this.sentHints.set(key, new Set());
         }
-        this.sentHints.get(key).add(hintId);
-        Logger.info(`Recorded hint ${hintId} sent to student ${studentId} for block ${blockId}`);
+        // Convert hintId to number to ensure consistency
+        const numericHintId = Number(hintId);
+        this.sentHints.get(key).add(numericHintId);
+
+        Logger.info(`Recorded hint ${numericHintId} sent to student ${studentId} for block ${blockId}`);
     }
 
     /**
@@ -145,7 +148,13 @@ class HintService {
                 this.hintRequests.delete(key);
             }
         }
-        Logger.info(`Cleared hint requests for block ${blockId}`);
+        // Also clear sent hints
+        for (const key of this.sentHints.keys()) {
+            if (key.startsWith(`${blockId}-`)) {
+                this.sentHints.delete(key);
+            }
+        }
+        Logger.info(`Cleared hint requests and sent hints for block ${blockId}`);
     }
 
     /**
