@@ -40,9 +40,10 @@ class RoomService {
      * @param {string} blockId - Code block ID
      * @param {string} socketId - Socket ID
      * @param {string} initialCode - Initial code template
+     * @param {string} username - Optional username for student
      * @returns {{role: string, room: Object}} Role and room info
      */
-    joinRoom(blockId, socketId, initialCode = '') {
+    joinRoom(blockId, socketId, initialCode = '', username = null) {
         const room = this.getOrCreateRoom(blockId);
         let role;
 
@@ -51,15 +52,18 @@ class RoomService {
             role = USER_ROLES.MENTOR;
             Logger.info(`Mentor ${socketId} joined room block-${blockId}`);
         } else {
-            // Add student with their own code copy
+            // Add student with their own code copy and custom name
             const studentNumber = room.students.size + 1;
+            const studentName = username || `Student ${studentNumber}`;
+
             room.students.set(socketId, {
                 code: initialCode,
-                name: `Student ${studentNumber}`,
-                socketId: socketId
+                name: studentName,
+                socketId: socketId,
+                joinedAt: new Date()
             });
             role = USER_ROLES.STUDENT;
-            Logger.info(`Student ${socketId} joined room block-${blockId}`);
+            Logger.info(`Student ${socketId} (${studentName}) joined room block-${blockId}`);
         }
 
         return {role, room};
@@ -105,6 +109,7 @@ class RoomService {
         const student = room.students.get(socketId);
         if (student) {
             student.code = code;
+            student.lastUpdate = new Date();
         }
     }
 
@@ -121,7 +126,9 @@ class RoomService {
             studentsArray.push({
                 socketId,
                 name: student.name,
-                code: student.code
+                code: student.code,
+                joinedAt: student.joinedAt,
+                lastUpdate: student.lastUpdate
             });
         });
 
@@ -168,6 +175,32 @@ class RoomService {
                 name: student.name
             }))
         };
+    }
+
+    /**
+     * Check if a socket is a student in a room
+     * @param {string} blockId - Code block ID
+     * @param {string} socketId - Socket ID
+     * @returns {boolean} True if student
+     */
+    isStudent(blockId, socketId) {
+        const room = this.getOrCreateRoom(blockId);
+        return room.students.has(socketId);
+    }
+
+    /**
+     * Update student's name
+     * @param {string} blockId - Code block ID
+     * @param {string} socketId - Socket ID
+     * @param {string} newName - New name
+     */
+    updateStudentName(blockId, socketId, newName) {
+        const room = this.getOrCreateRoom(blockId);
+        const student = room.students.get(socketId);
+        if (student) {
+            student.name = newName;
+            Logger.info(`Updated student ${socketId} name to ${newName} in room block-${blockId}`);
+        }
     }
 
     /**

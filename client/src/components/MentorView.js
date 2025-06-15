@@ -4,6 +4,8 @@ import MonacoEditor from './MonacoEditor';
 const MentorView = ({students, codeBlock, onStudentUpdate, onStudentSolved}) => {
     const [selectedStudent, setSelectedStudent] = useState(null);
 
+    console.log('MentorView students:', students); // Debug log
+
     // If no students, show empty state
     if (!students || students.length === 0) {
         return (
@@ -42,9 +44,18 @@ const MentorView = ({students, codeBlock, onStudentUpdate, onStudentSolved}) => 
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="font-medium">{student.name}</span>
-                                    {student.solved && (
-                                        <span className="text-green-400" title="Solved!">✅</span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {student.hasHintRequest && (
+                                            <span className="text-yellow-400 animate-pulse" title="Hint requested">
+                                                💡
+                                            </span>
+                                        )}
+                                        {student.solved && (
+                                            <span className="text-green-400" title="Solved!">
+                                                ✅
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 {student.lastUpdate && (
                                     <div className="text-xs text-gray-400 mt-1">

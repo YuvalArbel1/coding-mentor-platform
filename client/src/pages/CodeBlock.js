@@ -4,6 +4,9 @@ import Editor from '@monaco-editor/react';
 import {codeBlockAPI} from '../services/api';
 import socketService from '../services/socket';
 import MentorView from '../components/MentorView';
+import UsernameModal from '../components/UsernameModal';
+import StudentHintPanel from '../components/StudentHintPanel';
+import MentorHintModal from '../components/MentorHintModal';
 
 const CodeBlock = () => {
     const {id} = useParams();
@@ -18,6 +21,14 @@ const CodeBlock = () => {
     const [isSolutionCorrect, setIsSolutionCorrect] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Username state
+    const [username, setUsername] = useState('');
+    const [showUsernameModal, setShowUsernameModal] = useState(false);
+
+    // Hint state
+    const [hints, setHints] = useState([]);
+    const [pendingHintRequest, setPendingHintRequest] = useState(null);
 
     // Mentor-specific state
     const [students, setStudents] = useState([]);
@@ -56,9 +67,14 @@ const CodeBlock = () => {
                     currentStudentIds.includes(s.socketId)
                 );
 
-                // Add any new students that aren't in our list
+                // Add or update students
                 roomInfo.students.forEach(roomStudent => {
-                    if (!updatedStudents.find(s => s.socketId === roomStudent.socketId)) {
+                    const existingIndex = updatedStudents.findIndex(s => s.socketId === roomStudent.socketId);
+                    if (existingIndex >= 0) {
+                        // Update existing student's name
+                        updatedStudents[existingIndex].name = roomStudent.name;
+                    } else {
+                        // Add new student
                         updatedStudents.push({
                             socketId: roomStudent.socketId,
                             name: roomStudent.name,
@@ -97,6 +113,7 @@ const CodeBlock = () => {
             setLoading(false);
         }
     };
+
     const setupSocketListeners = () => {
         // When joined room
         socketService.onJoinRoom((data) => {
@@ -106,9 +123,13 @@ const CodeBlock = () => {
             if (data.role === 'mentor') {
                 // Mentor receives list of students
                 setStudents(data.students || []);
+                // Set mentor's name to Tom
+                setUsername('Tom');
             } else {
                 // Student receives their code
                 setCode(data.code || '// Loading code...');
+                // Show username modal for student
+                setShowUsernameModal(true);
             }
         });
 
@@ -137,8 +158,10 @@ const CodeBlock = () => {
                 const studentIndex = updated.findIndex(s => s.socketId === data.socketId);
 
                 if (studentIndex >= 0) {
+                    // Update existing student's code AND name
                     updated[studentIndex] = {
                         ...updated[studentIndex],
+                        name: data.name,
                         code: data.code,
                         lastUpdate: new Date()
                     };
@@ -180,6 +203,35 @@ const CodeBlock = () => {
                 return filtered;
             });
         });
+
+        // Hint-related listeners
+        socketService.onHintRequestReceived((data) => {
+            setPendingHintRequest(data);
+        });
+
+        socketService.onHintRequestSent((data) => {
+            // Could show a notification to student
+        });
+
+        socketService.onHintReceived((data) => {
+            setHints(prev => [...prev, data]);
+        });
+
+        socketService.onHintDeclined(() => {
+            alert('Your hint request was declined by the mentor.');
+        });
+
+        socketService.onHintSentConfirmation(() => {
+            // Could show confirmation to mentor
+        });
+
+        socketService.onError((data) => {
+            console.error('Socket error:', data.message);
+            // Show error to user if it's about hints
+            if (data.message.includes('hints')) {
+                alert(data.message);
+            }
+        });
     };
 
     const handleCodeChange = (newCode) => {
@@ -187,6 +239,27 @@ const CodeBlock = () => {
             setCode(newCode);
             socketService.sendCodeChange(parseInt(id), newCode);
         }
+    };
+
+    const handleUsernameSubmit = (name) => {
+        setUsername(name);
+        setShowUsernameModal(false);
+        // Re-join room with username
+        socketService.joinRoom(parseInt(id), name);
+    };
+
+    const handleRequestHint = () => {
+        socketService.requestHint(parseInt(id), username);
+    };
+
+    const handleSendHint = (studentId, hintId, blockId) => {
+        socketService.sendHint(studentId, hintId, blockId);
+        setPendingHintRequest(null);
+    };
+
+    const handleDeclineHint = (studentId, blockId) => {
+        socketService.declineHint(studentId, blockId);
+        setPendingHintRequest(null);
     };
 
     if (loading || isConnecting) {
@@ -219,6 +292,11 @@ const CodeBlock = () => {
         );
     }
 
+    // Show username modal if student hasn't entered name
+    if (showUsernameModal && role === 'student') {
+        return <UsernameModal onSubmit={handleUsernameSubmit}/>;
+    }
+
     return (
         <div className="h-screen flex flex-col">
             {/* Header */}
@@ -237,7 +315,7 @@ const CodeBlock = () => {
                                     ? 'bg-purple-600 text-white'
                                     : 'bg-green-600 text-white'
                             }`}>
-                                {role === 'mentor' ? '👨‍🏫 Mentor (Read-only)' : '👨‍🎓 Student'}
+                                {role === 'mentor' ? '👨‍🏫 Tom (Mentor)' : `👨‍🎓 ${username || 'Student'}`}
                             </div>
                         )}
 
@@ -271,38 +349,60 @@ const CodeBlock = () => {
 
             {/* Main Content - Different for mentor vs student */}
             {role === 'mentor' ? (
-                <MentorView
-                    students={students}
-                    codeBlock={codeBlock}
-                />
-            ) : (
-                /* Student View - Code Editor */
-                <div className="flex-1 overflow-hidden">
-                    {code ? (
-                        <Editor
-                            height="100%"
-                            defaultLanguage="javascript"
-                            theme="vs-dark"
-                            value={code}
-                            onChange={handleCodeChange}
-                            options={{
-                                readOnly: false,
-                                minimap: {enabled: false},
-                                fontSize: 16,
-                                lineNumbers: 'on',
-                                roundedSelection: false,
-                                scrollBeyondLastLine: false,
-                                automaticLayout: true,
-                                padding: {top: 20, bottom: 20},
-                            }}
-                            loading={<div className="flex items-center justify-center h-full text-gray-400">Loading
-                                editor...</div>}
+                <>
+                    <MentorView
+                        students={students}
+                        codeBlock={codeBlock}
+                    />
+                    {pendingHintRequest && (
+                        <MentorHintModal
+                            hintRequest={pendingHintRequest}
+                            onSendHint={handleSendHint}
+                            onDecline={handleDeclineHint}
+                            onClose={() => setPendingHintRequest(null)}
                         />
-                    ) : (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-gray-400">Loading code...</div>
-                        </div>
                     )}
+                </>
+            ) : (
+                /* Student View */
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Hint Panel for Students */}
+                    <div className="px-6 py-4">
+                        <StudentHintPanel
+                            hints={hints}
+                            onRequestHint={handleRequestHint}
+                            studentName={username}
+                        />
+                    </div>
+
+                    {/* Code Editor */}
+                    <div className="flex-1 overflow-hidden">
+                        {code !== undefined ? (
+                            <Editor
+                                height="100%"
+                                defaultLanguage="javascript"
+                                theme="vs-dark"
+                                value={code}
+                                onChange={handleCodeChange}
+                                options={{
+                                    readOnly: false,
+                                    minimap: {enabled: false},
+                                    fontSize: 16,
+                                    lineNumbers: 'on',
+                                    roundedSelection: false,
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                    padding: {top: 20, bottom: 20},
+                                }}
+                                loading={<div className="flex items-center justify-center h-full text-gray-400">Loading
+                                    editor...</div>}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-gray-400">Loading code...</div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 

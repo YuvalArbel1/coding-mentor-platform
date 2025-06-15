@@ -39,9 +39,14 @@ class SocketService {
         }
     }
 
-    joinRoom(blockId) {
+    joinRoom(blockId, username) {
         if (this.socket) {
-            this.socket.emit('join-room', {blockId});
+            // Only send username if provided
+            const data = {blockId};
+            if (username) {
+                data.username = username;
+            }
+            this.socket.emit('join-room', data);
         }
     }
 
@@ -51,7 +56,26 @@ class SocketService {
         }
     }
 
+    // New hint-related methods
+    requestHint(blockId, studentName) {
+        if (this.socket) {
+            this.socket.emit('request-hint', {blockId, studentName});
+        }
+    }
 
+    sendHint(studentId, hintId, blockId) {
+        if (this.socket) {
+            this.socket.emit('send-hint', {studentId, hintId, blockId});
+        }
+    }
+
+    declineHint(studentId, blockId) {
+        if (this.socket) {
+            this.socket.emit('decline-hint', {studentId, blockId});
+        }
+    }
+
+    // Event listeners
     onJoinRoom(callback) {
         if (this.socket) {
             this.socket.on('join-room', callback);
@@ -91,6 +115,43 @@ class SocketService {
     onStudentLeft(callback) {
         if (this.socket) {
             this.socket.on('student-left', callback);
+        }
+    }
+
+    // New hint event listeners
+    onHintRequestReceived(callback) {
+        if (this.socket) {
+            this.socket.on('hint-request-received', callback);
+        }
+    }
+
+    onHintRequestSent(callback) {
+        if (this.socket) {
+            this.socket.on('hint-request-sent', callback);
+        }
+    }
+
+    onHintReceived(callback) {
+        if (this.socket) {
+            this.socket.on('hint-received', callback);
+        }
+    }
+
+    onHintDeclined(callback) {
+        if (this.socket) {
+            this.socket.on('hint-declined', callback);
+        }
+    }
+
+    onHintSentConfirmation(callback) {
+        if (this.socket) {
+            this.socket.on('hint-sent-confirmation', callback);
+        }
+    }
+
+    onError(callback) {
+        if (this.socket) {
+            this.socket.on('error', callback);
         }
     }
 
