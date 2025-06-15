@@ -4,7 +4,7 @@ A real-time collaborative coding platform that enables mentors to guide students
 
 ## 🌟 Live Demo
 
-[Deploy URL will go here]
+🔗 **[https://coding-mentor-platform.onrender.com](https://coding-mentor-platform.onrender.com)**
 
 ## 📋 Table of Contents
 
@@ -172,14 +172,14 @@ coding-mentor-platform/
 ```javascript
 // Write an async function that fetches user data
 async function getUserData(userId) {
-  try {
-    const response = await fetch(`/api/users/${userId}`);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    throw error;
-  }
+   try {
+      const response = await fetch(`/api/users/${userId}`);
+      const data = await response.json();
+      return data;
+   } catch (error) {
+      console.error("Error fetching user:", error);
+      throw error;
+   }
 }
 ```
 
@@ -194,11 +194,11 @@ const doubled = numbers.map(num => num * 2);
 ```javascript
 // Create a promise that resolves after 2 seconds
 function delay() {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve("Done!");
-    }, 2000);
-  });
+   return new Promise((resolve) => {
+      setTimeout(() => {
+         resolve("Done!");
+      }, 2000);
+   });
 }
 ```
 
@@ -206,11 +206,11 @@ function delay() {
 ```javascript
 // Create a counter function using closure
 function createCounter() {
-  let count = 0;
-  return function() {
-    count++;
-    return count;
-  };
+   let count = 0;
+   return function() {
+      count++;
+      return count;
+   };
 }
 ```
 
