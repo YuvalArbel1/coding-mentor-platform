@@ -23,10 +23,7 @@ class SocketService {
      * Connect to the Socket.io server
      */
     connect() {
-        // In production, connect to the same domain. In development, use localhost
-        const url = process.env.NODE_ENV === 'production' ? window.location.origin : SOCKET_URL;
-
-        this.socket = io(url, {
+        this.socket = io('/', {
             transports: ['websocket'],
         });
 
