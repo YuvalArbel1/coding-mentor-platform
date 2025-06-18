@@ -27,7 +27,7 @@ class SocketService {
         const url = process.env.NODE_ENV === 'production' ? window.location.origin : SOCKET_URL;
 
         this.socket = io(url, {
-            transports: ['websocket', 'polling'],
+            transports: ['websocket'],
         });
 
         this.socket.on('connect', () => {
