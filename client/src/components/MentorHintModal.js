@@ -78,6 +78,12 @@ const MentorHintModal = ({hintRequest, onSendHint, onDecline, onClose}) => {
                     Hint Request from {hintRequest.studentName}
                 </h2>
 
+                {totalRequests > 1 && (
+                    <p className="text-yellow-400 text-sm mb-2">
+                        📋 {totalRequests - 1} more request{totalRequests > 2 ? 's' : ''} in queue
+                    </p>
+                )}
+
                 {/* Request information section */}
                 <div className="mb-4">
                     <p className="text-gray-300">

@@ -387,6 +387,7 @@ const CodeBlock = () => {
                             onSendHint={handleSendHint}
                             onDecline={handleDeclineHint}
                             onClose={() => setPendingHintRequests(prev => prev.slice(1))}
+                            totalRequests={pendingHintRequests.length}
                         />
                     )}
                 </>
