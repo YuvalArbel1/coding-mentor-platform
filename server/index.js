@@ -11,14 +11,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
-// Import configurations
-import './config/database.js'; // Initialize database connection
+import './config/database.js';
 import Logger from './utils/logger.js';
 
-// Import routes
 import codeBlockRoutes from './routes/codeBlockRoutes.js';
 
-// Import Socket controller
 import setupSocketHandlers from './controllers/socketController.js';
 
 dotenv.config();
@@ -44,7 +41,7 @@ app.use(express.urlencoded({extended: true}));
 // API Routes
 app.use('/api/blocks', codeBlockRoutes);
 
-// Health check route - moved to /api/health
+// Health check route
 app.get('/api/health', (req, res) => {
     res.json({
         message: 'Coding Mentor Platform API',

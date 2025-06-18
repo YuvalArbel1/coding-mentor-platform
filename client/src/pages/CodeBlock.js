@@ -93,7 +93,6 @@ const CodeBlock = () => {
             setLoading(true);
             const response = await codeBlockAPI.getBlockById(id);
 
-            // ADD THIS VALIDATION
             if (!response.data || parseInt(id) > 4 || parseInt(id) < 1) {
                 setError('Invalid code block');
                 setLoading(false);
@@ -208,11 +207,32 @@ const CodeBlock = () => {
         });
 
         socketService.onHintRequestSent((data) => {
-            // Could show a notification to student
+            // Show a success notification to student
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.innerHTML = '📤 Hint request sent to Tom! Waiting for approval...';
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         });
+
 
         socketService.onHintReceived((data) => {
             setHints(prev => [...prev, data]);
+
+            // Show notification to student that they received a hint
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.innerHTML = `🎉 Tom sent you a ${data.level.toUpperCase()} hint! Check the hint panel.`;
+            document.body.appendChild(notification);
+
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
         });
 
         socketService.onHintDeclined(() => {
@@ -220,7 +240,16 @@ const CodeBlock = () => {
         });
 
         socketService.onHintSentConfirmation(() => {
-            // Could show confirmation to mentor
+            // Show confirmation to mentor
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.innerHTML = '✅ Hint sent successfully to student!';
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         });
 
         socketService.onError((data) => {
