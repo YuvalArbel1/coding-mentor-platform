@@ -27,7 +27,7 @@ import React, {useState} from 'react';
  * @param {Function} props.onClose - Callback to close the modal without action
  *
  */
-const MentorHintModal = ({hintRequest, onSendHint, onDecline, onClose}) => {
+const MentorHintModal = ({hintRequest, onSendHint, onDecline, onClose, totalRequests}) => {
     // State to track which hint the mentor has selected
     const [selectedHintId, setSelectedHintId] = useState(null);
 
