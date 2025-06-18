@@ -58,3 +58,7 @@ html, body, #root {
 .celebrate {
     animation: celebration 0.5s ease-in-out;
 }
+
+.notification-toast {
+    z-index: 9999 !important;
+}

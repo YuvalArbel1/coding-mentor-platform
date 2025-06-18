@@ -209,7 +209,7 @@ const CodeBlock = () => {
         socketService.onHintRequestSent((data) => {
             // Show a success notification to student
             const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.className = 'notification-toast fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
             notification.innerHTML = '📤 Hint request sent to Tom! Waiting for approval...';
             document.body.appendChild(notification);
 
@@ -225,7 +225,7 @@ const CodeBlock = () => {
 
             // Show notification to student that they received a hint
             const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.className = 'notification-toast fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
             notification.innerHTML = `🎉 Tom sent you a ${data.level.toUpperCase()} hint! Check the hint panel.`;
             document.body.appendChild(notification);
 
@@ -242,7 +242,7 @@ const CodeBlock = () => {
         socketService.onHintSentConfirmation(() => {
             // Show confirmation to mentor
             const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.className = 'notification-toast fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
             notification.innerHTML = '✅ Hint sent successfully to student!';
             document.body.appendChild(notification);
 
@@ -281,11 +281,13 @@ const CodeBlock = () => {
 
     const handleSendHint = (studentId, hintId, blockId) => {
         socketService.sendHint(studentId, hintId, blockId);
+        // Remove the request from pending
         setPendingHintRequests(prev => prev.filter(req => req.studentId !== studentId));
     };
 
     const handleDeclineHint = (studentId, blockId) => {
         socketService.declineHint(studentId, blockId);
+        // Remove the request from pending
         setPendingHintRequests(prev => prev.filter(req => req.studentId !== studentId));
     };
 
@@ -386,7 +388,8 @@ const CodeBlock = () => {
                             hintRequest={pendingHintRequests[0]}
                             onSendHint={handleSendHint}
                             onDecline={handleDeclineHint}
-                            onClose={() => setPendingHintRequests(prev => prev.slice(1))}
+                            onClose={() => {
+                            }}
                             totalRequests={pendingHintRequests.length}
                         />
                     )}
