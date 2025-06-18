@@ -79,7 +79,6 @@ const CodeBlock = () => {
                             socketId: roomStudent.socketId,
                             name: roomStudent.name,
                             code: '// Loading...',
-                            lastUpdate: new Date()
                         });
                     }
                 });
@@ -171,7 +170,6 @@ const CodeBlock = () => {
                         socketId: data.socketId,
                         name: data.name,
                         code: data.code,
-                        lastUpdate: new Date()
                     });
                 }
 
