@@ -28,7 +28,7 @@ const CodeBlock = () => {
 
     // Hint state
     const [hints, setHints] = useState([]);
-    const [pendingHintRequest, setPendingHintRequest] = useState(null);
+    const [pendingHintRequests, setPendingHintRequests] = useState([]);
 
     // Mentor-specific state
     const [students, setStudents] = useState([]);
@@ -203,7 +203,7 @@ const CodeBlock = () => {
 
         // Hint-related listeners
         socketService.onHintRequestReceived((data) => {
-            setPendingHintRequest(data);
+            setPendingHintRequests(prev => [...prev, data]);
         });
 
         socketService.onHintRequestSent((data) => {
@@ -281,12 +281,12 @@ const CodeBlock = () => {
 
     const handleSendHint = (studentId, hintId, blockId) => {
         socketService.sendHint(studentId, hintId, blockId);
-        setPendingHintRequest(null);
+        setPendingHintRequests(prev => prev.filter(req => req.studentId !== studentId));
     };
 
     const handleDeclineHint = (studentId, blockId) => {
         socketService.declineHint(studentId, blockId);
-        setPendingHintRequest(null);
+        setPendingHintRequests(prev => prev.filter(req => req.studentId !== studentId));
     };
 
     if (loading || isConnecting) {
@@ -381,12 +381,12 @@ const CodeBlock = () => {
                         students={students}
                         codeBlock={codeBlock}
                     />
-                    {pendingHintRequest && (
+                    {pendingHintRequests.length > 0 && (
                         <MentorHintModal
-                            hintRequest={pendingHintRequest}
+                            hintRequest={pendingHintRequests[0]}
                             onSendHint={handleSendHint}
                             onDecline={handleDeclineHint}
-                            onClose={() => setPendingHintRequest(null)}
+                            onClose={() => setPendingHintRequests(prev => prev.slice(1))}
                         />
                     )}
                 </>
