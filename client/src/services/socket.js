@@ -1,15 +1,33 @@
+/**
+ * Socket.io Client Service
+ *
+ * Handles all WebSocket connections and real-time communication
+ * between the client and server for the collaborative coding platform.
+ *
+ * @module services/socket
+ */
+
 import {io} from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || '';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
+/**
+ * Socket Service - Manages WebSocket connections
+ */
 class SocketService {
     constructor() {
         this.socket = null;
     }
 
+    /**
+     * Connect to the Socket.io server
+     */
     connect() {
-        this.socket = io(SOCKET_URL, {
-            transports: ['websocket'],
+        // In production, connect to the same domain. In development, use localhost
+        const url = process.env.NODE_ENV === 'production' ? window.location.origin : SOCKET_URL;
+
+        this.socket = io(url, {
+            transports: ['websocket', 'polling'],
         });
 
         this.socket.on('connect', () => {
@@ -32,6 +50,9 @@ class SocketService {
         return this.socket;
     }
 
+    /**
+     * Disconnect from the server
+     */
     disconnect() {
         if (this.socket) {
             this.socket.disconnect();
@@ -39,9 +60,11 @@ class SocketService {
         }
     }
 
+    /**
+     * Join a code block room
+     */
     joinRoom(blockId, username) {
         if (this.socket) {
-            // Only send username if provided
             const data = {blockId};
             if (username) {
                 data.username = username;
@@ -50,13 +73,16 @@ class SocketService {
         }
     }
 
+    /**
+     * Send code changes to server
+     */
     sendCodeChange(blockId, code) {
         if (this.socket) {
             this.socket.emit('code-change', {blockId, code});
         }
     }
 
-    // New hint-related methods
+    // Hint-related methods
     requestHint(blockId, studentName) {
         if (this.socket) {
             this.socket.emit('request-hint', {blockId, studentName});
@@ -122,7 +148,7 @@ class SocketService {
         }
     }
 
-    // New hint event listeners
+    // Hint event listeners
     onHintRequestReceived(callback) {
         if (this.socket) {
             this.socket.on('hint-request-received', callback);
