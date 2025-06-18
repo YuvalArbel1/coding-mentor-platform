@@ -15,8 +15,7 @@ import axios from 'axios';
  * Uses environment variable if available, otherwise defaults to localhost
  * @constant {string}
  */
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 /**
  * Axios instance with default configuration
  * @constant {AxiosInstance}
