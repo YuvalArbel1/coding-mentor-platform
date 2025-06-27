@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { Pool } = pg;
+const {Pool} = pg;
 
 /**
  * PostgreSQL connection pool
@@ -21,21 +21,10 @@ const pool = new Pool({
     },
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000, // 10 seconds
+    connectionTimeoutMillis: 10000,
     query_timeout: 10000,
     statement_timeout: 10000,
 });
-
-/**
- * Keep-alive query to prevent connection timeout
- */
-setInterval(async () => {
-    try {
-        await pool.query('SELECT 1');
-    } catch (err) {
-        console.log('Keep-alive query failed:', err.message);
-    }
-}, 30000); // Every 30 seconds
 
 /**
  * Test database connection
